@@ -1,0 +1,7 @@
+{
+  "description": "Christmas Tree - AI Interactive Experience",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "name": "Christmas Tree"
+}
