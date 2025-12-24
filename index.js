@@ -1,4 +1,3 @@
-
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -40,19 +39,14 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.toneMapping = THREE.ReinhardToneMapping;
-// Lower exposure to prevent burnout on photos and gold
 renderer.toneMappingExposure = 1.2; 
 container.appendChild(renderer.domElement);
 
-// Environment
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
 scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
-// Post Processing
 const renderScene = new RenderPass(scene, camera);
 const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-// Tuned Bloom: Higher threshold prevents candy canes (white) from glowing pink
-// Strength increased to make the Gold Star and lights pop
 bloomPass.strength = 0.7; 
 bloomPass.radius = 0.5;
 bloomPass.threshold = 0.85; 
@@ -64,7 +58,6 @@ composer.addPass(renderScene);
 composer.addPass(bloomPass);
 composer.addPass(outputPass);
 
-// Lights
 const ambientLight = new THREE.AmbientLight(0xffeebb, 0.5);
 scene.add(ambientLight);
 
@@ -72,20 +65,17 @@ const innerLight = new THREE.PointLight(0xffaa00, 3, 50);
 innerLight.position.set(0, 5, 0);
 scene.add(innerLight);
 
-// Main Golden Spotlight
 const spotLightMain = new THREE.SpotLight(0xffd700, 1500);
 spotLightMain.position.set(30, 40, 40);
 spotLightMain.angle = Math.PI / 6;
 spotLightMain.penumbra = 1;
 scene.add(spotLightMain);
 
-// Warm Fill Light (Replaced the Blue light)
 const spotLightWarm = new THREE.SpotLight(0xffaa33, 500);
 spotLightWarm.position.set(-30, 20, -30);
 spotLightWarm.penumbra = 1;
 scene.add(spotLightWarm);
 
-// Group for rotation
 const mainGroup = new THREE.Group();
 scene.add(mainGroup);
 
@@ -106,7 +96,6 @@ function createCandyCaneTexture() {
   canvas.height = 128;
   const ctx = canvas.getContext('2d');
   if (!ctx) return new THREE.CanvasTexture(canvas);
-  // Use light grey instead of pure white to avoid bloom glare
   ctx.fillStyle = '#dddddd'; 
   ctx.fillRect(0, 0, 128, 128);
   ctx.fillStyle = '#b00000';
@@ -132,16 +121,13 @@ function createSparkleTexture() {
   canvas.height = 64;
   const ctx = canvas.getContext('2d');
   if(!ctx) return new THREE.CanvasTexture(canvas);
-  
   const grd = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
   grd.addColorStop(0, 'rgba(255, 255, 255, 1)');
   grd.addColorStop(0.2, 'rgba(255, 220, 100, 0.9)');
   grd.addColorStop(0.5, 'rgba(212, 175, 55, 0.4)');
   grd.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  
   ctx.fillStyle = grd;
   ctx.fillRect(0, 0, 64, 64);
-  
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -153,7 +139,6 @@ function createTextTexture(text) {
   canvas.height = 512;
   const ctx = canvas.getContext('2d');
   if (!ctx) return new THREE.CanvasTexture(canvas);
-  
   ctx.fillStyle = '#fceea7';
   ctx.fillRect(0, 0, 512, 512);
   ctx.strokeStyle = '#d4af37';
@@ -164,58 +149,35 @@ function createTextTexture(text) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, 256, 256);
-  
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
-// --- Star Topper ---
 let starMesh = null;
 function createStar() {
     const shape = new THREE.Shape();
     const points = 5;
     const outerRadius = 2.5;
     const innerRadius = 1.2;
-    
     for (let i = 0; i < points * 2; i++) {
         const angle = (i / (points * 2)) * Math.PI * 2;
         const radius = (i % 2 === 0) ? outerRadius : innerRadius;
-        // Changed from -PI/2 to +PI/2 to make the tip point upwards
         const x = Math.cos(angle + Math.PI / 2) * radius; 
         const y = Math.sin(angle + Math.PI / 2) * radius;
         if (i === 0) shape.moveTo(x, y);
         else shape.lineTo(x, y);
     }
     shape.closePath();
-
-    const extrudeSettings = {
-        depth: 0.5,
-        bevelEnabled: true,
-        bevelThickness: 0.2,
-        bevelSize: 0.1,
-        bevelSegments: 3
-    };
-
+    const extrudeSettings = { depth: 0.5, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.1, bevelSegments: 3 };
     const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     geometry.center(); 
-    
-    const mat = new THREE.MeshStandardMaterial({
-        color: 0xffd700,
-        roughness: 0.1,
-        metalness: 1.0,
-        emissive: 0xffaa00,
-        emissiveIntensity: 0.5
-    });
-
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.1, metalness: 1.0, emissive: 0xffaa00, emissiveIntensity: 0.5 });
     const mesh = new THREE.Mesh(geometry, mat);
-    mesh.position.set(0, 16.5, 0); // Top of tree
-    
-    // Add a local light to the star
+    mesh.position.set(0, 16.5, 0);
     const starLight = new THREE.PointLight(0xffaa00, 5, 15);
     starLight.position.set(0, 0, 2);
     mesh.add(starLight);
-
     mainGroup.add(mesh);
     starMesh = mesh;
 }
@@ -246,7 +208,6 @@ class Particle {
       (Math.random() - 0.5) * 0.1
     );
 
-    // Tree Position
     const t = Math.random();
     const h = t * 30 - 15;
     const maxR = 12 * (1 - t) + 1;
@@ -254,7 +215,6 @@ class Particle {
     const r = Math.random() * maxR;
     this.treePos = new THREE.Vector3(Math.cos(angle) * r, h, Math.sin(angle) * r);
 
-    // Scatter Position
     const phi = Math.acos(-1 + (2 * Math.random()));
     const theta = Math.sqrt(Math.PI * 2500) * phi;
     const rad = 8 + Math.random() * 12;
@@ -275,7 +235,6 @@ class Particle {
       this.mesh.rotation.y += this.speed.y;
     } else if (STATE.mode === MODES.FOCUS) {
       if (this.type === 'PHOTO' && idx === STATE.targetPhotoIndex) {
-        // Focus Mode
         tPos = localFocusPos;
         tScale = 1.35; 
         this.mesh.lookAt(camera.position);
@@ -283,11 +242,9 @@ class Particle {
         tPos = this.scatterPos;
       }
     } else {
-      // Tree Mode Sway
       if (this.type !== 'PHOTO') {
         this.mesh.rotation.y += 0.01;
       } else {
-        // Restore proper surface orientation for photos in tree mode
         this.mesh.quaternion.slerp(this.treeQuat, 0.1);
       }
     }
@@ -297,7 +254,6 @@ class Particle {
 
     if (STATE.mode !== MODES.SCATTER && !(STATE.mode === MODES.FOCUS && idx === STATE.targetPhotoIndex)) {
         if (this.type === 'PHOTO') {
-            // Quaternion slerp handles stability
         } else {
             this.mesh.rotation.x *= 0.95;
             this.mesh.rotation.z *= 0.95;
@@ -308,20 +264,16 @@ class Particle {
 
 function addPhotoToScene(texture) {
   const aspect = texture.image ? texture.image.width / texture.image.height : 1;
-  
-  // Increased Base Size: 3.0 height (1.5x of previous standard)
   const baseH = 3.0;
   const baseW = baseH * aspect;
   const frameBorder = 0.2;
 
   const group = new THREE.Group();
 
-  // 1. Frame (Back)
   const frameGeo = new THREE.BoxGeometry(baseW + frameBorder, baseH + frameBorder, 0.1);
   const frameMesh = new THREE.Mesh(frameGeo, goldMat);
   frameMesh.position.z = -0.06; 
   
-  // 2. Photo (Front) - Using Standard Material to avoid burnout
   const photoGeo = new THREE.PlaneGeometry(baseW, baseH);
   const photoMat = new THREE.MeshStandardMaterial({ 
       map: texture, 
@@ -338,13 +290,11 @@ function addPhotoToScene(texture) {
 
   const p = new Particle(group, 'PHOTO');
   
-  // --- Spiral Calculation ---
   const index = STATE.photos.length;
   const heightStep = 1.2;
   const angleStep = 0.8; 
   
   let h = -12 + (index * heightStep);
-  
   if (h > 15) {
      h = -12 + ((index * heightStep) % 27);
   }
@@ -353,28 +303,54 @@ function addPhotoToScene(texture) {
   const coneBaseY = -15;
   const t = (h - coneBaseY) / coneHeight; 
   const r = 12 * (1 - t) + 1; 
-  
   const angle = index * angleStep;
-  
   p.treePos.set(Math.cos(angle) * r, h, Math.sin(angle) * r);
   
-  // Orientation: Face the center, Flip to face out, then Tilt back to match cone slope
   group.position.copy(p.treePos);
   group.lookAt(0, p.treePos.y, 0);
   group.rotateY(Math.PI);
-  // Cone slope is approx delta R (12) / delta H (30).
-  // We want to tilt local Z upwards, which is negative X rotation.
   group.rotateX(-Math.atan(12/30));
   
-  // Save this orientation so we can restore it after scattering
   p.treeQuat.copy(group.quaternion);
 
   STATE.particles.push(p);
   STATE.photos.push(p);
 }
 
-// Init Particles
+// --- Init Particles & Custom Photos ---
 addPhotoToScene(createTextTexture("JOYEUX NOEL"));
+
+const PRELOAD_PHOTOS = [
+    // './assets/photo1.jpg', 
+    // './assets/photo2.png',
+    './assets/1.jpg',
+    './assets/2.jpg',
+    './assets/3.jpg',
+    './assets/4.jpg',
+    './assets/5.jpg',
+    './assets/6.jpg',
+    './assets/7.jpg',
+    './assets/8.jpg',
+    './assets/9.jpg',
+    './assets/10.jpg',
+    './assets/11.jpg',
+    './assets/12.jpg',
+];
+
+const textureLoader = new THREE.TextureLoader();
+PRELOAD_PHOTOS.forEach(path => {
+    textureLoader.load(
+        path,
+        (texture) => {
+            texture.colorSpace = THREE.SRGBColorSpace;
+            addPhotoToScene(texture);
+        },
+        undefined, 
+        (err) => {
+            console.warn(`Could not load image: ${path}. Make sure the file exists in the assets folder.`);
+        }
+    );
+});
 
 for (let i = 0; i < 1500; i++) {
   let mesh;
@@ -393,7 +369,6 @@ for (let i = 0; i < 1500; i++) {
   STATE.particles.push(new Particle(mesh, 'DECOR'));
 }
 
-// 1. Dust Particles
 const dustGeo = new THREE.BufferGeometry();
 const positions = [];
 for (let i = 0; i < 2500; i++) {
@@ -407,16 +382,10 @@ for (let i = 0; i < 2500; i++) {
   );
 }
 dustGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-const dustMat = new THREE.PointsMaterial({ 
-    color: 0xffd700, 
-    size: 0.15, 
-    transparent: true, 
-    opacity: 0.6 
-});
+const dustMat = new THREE.PointsMaterial({ color: 0xffd700, size: 0.15, transparent: true, opacity: 0.6 });
 STATE.dust = new THREE.Points(dustGeo, dustMat);
 mainGroup.add(STATE.dust);
 
-// 2. Sparkle Halo Particles
 const sparkleGeo = new THREE.BufferGeometry();
 const sparkleCount = 400;
 const sparklePos = [];
@@ -487,7 +456,6 @@ function detectGestures(landmarks) {
     const wrist = landmarks[0];
     const tips = [landmarks[8], landmarks[12], landmarks[16], landmarks[20]];
 
-    // Pinch dist
     const pinchDist = Math.hypot(thumb.x - index.x, thumb.y - index.y, thumb.z - index.z);
     const midDist = Math.hypot(mid.x - wrist.x, mid.y - wrist.y, mid.z - wrist.z);
     
@@ -541,7 +509,6 @@ async function predictWebcam() {
     requestAnimationFrame(predictWebcam);
 }
 
-// --- 5. Animation Loop ---
 const clock = new THREE.Clock();
 
 const animate = () => {
@@ -554,12 +521,10 @@ const animate = () => {
   mainGroup.rotation.y = THREE.MathUtils.lerp(mainGroup.rotation.y, targetRotY, 0.05);
   mainGroup.rotation.x = THREE.MathUtils.lerp(mainGroup.rotation.x, targetRotX, 0.05);
 
-  // Rotate Star independently
   if (starMesh) {
       starMesh.rotation.y -= 0.01;
   }
 
-  // --- Calculate Local Position for Centering ---
   const worldFocusPos = new THREE.Vector3(0, 2, 42);
   mainGroup.updateMatrixWorld(); 
   const invModelMatrix = mainGroup.matrixWorld.clone().invert();
